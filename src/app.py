@@ -1,70 +1,143 @@
 """
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
-import os
-from flask import Flask, request, jsonify, url_for, send_from_directory
+from flask import Flask, request, jsonify
 from flask_migrate import Migrate
-from flask_swagger import swagger
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager, create_refresh_token
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
-from api.utils import APIException, generate_sitemap
-from api.models import db
+from api.models import db, User
 from api.routes import api
-from api.admin import setup_admin
-from api.commands import setup_commands
+import datetime
 
-#from models import Person
 
-ENV = os.getenv("FLASK_ENV")
-static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../public/')
 app = Flask(__name__)
-app.url_map.strict_slashes = False
-
-# database condiguration
-db_url = os.getenv("DATABASE_URL")
-if db_url is not None:
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
-
+app.config['DEBUG'] = True
+app.config['ENV'] = 'development'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-MIGRATE = Migrate(app, db, compare_type = True)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///autenticationsystem'
+app.config['JWT_SECRET_KEY'] = 'f0fec5d882b5a761bb2f4e98ef078135'
+app.config['JSON_SORT_KEYS'] = False
+
 db.init_app(app)
-
-# Allow CORS requests to this API
+Migrate(app, db)
 CORS(app)
+jwt = JWTManager(app)
 
-# add the admin
-setup_admin(app)
 
-# add the admin
-setup_commands(app)
 
 # Add all endpoints form the API with a "api" prefix
 app.register_blueprint(api, url_prefix='/api')
 
-# Handle/serialize errors like a JSON object
-@app.errorhandler(APIException)
-def handle_invalid_usage(error):
-    return jsonify(error.to_dict()), error.status_code
 
-# generate sitemap with all your endpoints
-@app.route('/')
-def sitemap():
-    if ENV == "development":
-        return generate_sitemap(app)
-    return send_from_directory(static_file_dir, 'index.html')
+@app.route('/', methods = ['GET'])
+def root():
+    return jsonify({"msg" : "It's working :D"}), 200
 
-# any other endpoint will try to serve it like a static file
-@app.route('/<path:path>', methods=['GET'])
-def serve_any_other_file(path):
-    if not os.path.isfile(os.path.join(static_file_dir, path)):
-        path = 'index.html'
-    response = send_from_directory(static_file_dir, path)
-    response.cache_control.max_age = 0 # avoid cache memory
-    return response
+#login route
+@app.route('/login', methods=['POST'])
+def login():
+
+    email = request.json.get('email')
+    password = request.json.get('password')
+
+    if not email: return jsonify({ 
+        'status': 'failed', 'message':'Email is required', 'data': None 
+    }), 400
+    if not password: return jsonify({ 
+        'status': 'failed', 'message':'Password is required', 'data': None 
+    }), 400
+
+    uExists = User.query.filter_by(email = email).first()
+    #no existe
+    if not uExists: return jsonify({
+        'status': 'failed', 
+        'message':'User already exists',
+        'data': None
+    }), 401
+    #validacion pass
+    if not check_password_hash(uExists.password, password):
+        return jsonify({
+            'status': 'failed', 
+            'message': 'Password is incorrect', 
+            'data': None
+        }), 401
+
+    #expiracion fecha
+    expired = datetime.timedelta(minutes=59)
+
+    #access token
+    access_token = create_access_token(
+        identity=uExists.id,
+        expires_delta=expired
+    )
+
+    data = {
+        'access_token': access_token,
+        'user': uExists.serialize()
+    }
+
+    return jsonify({
+        "status": "success",
+        "message": "Login successfully :D",
+        "data": data
+    }), 200
+
+#register route
+
+@app.route('/register', methods=['POST'])
+def register():
+    email = request.json.get('email')
+    password = request.json.get('password')
+    
+
+    if not email: return jsonify({ 
+        'status': 'failed', 
+        'message':'Email is required' 
+    }), 400
+    if not password: return jsonify({ 
+        'status': 'failed', 
+        'message':'Password is required' 
+    }), 400
+    
+    #user ya existe
+    uFound = User.query.filter_by(email=email).first()
+    if uFound: return jsonify({
+        'status': 'failed', 
+        'message': 'Email already exists',
+        'data': None
+    }), 400 
+
+    #si no existe...
+
+    user = User()
+    user.email=email
+    user.password=generate_password_hash(password)
+
+    user.save()
+
+    #registro exitoso
+
+    if user: return jsonify({
+        'status': 'success',
+        'message': 'Register successful :D',
+        'data': None
+
+    }), 200
+    else: return jsonify({
+        'status': 'failed', 
+        'message': 'Error, please try again',
+        'data': None
+    }), 200
+
+@app.route('/private', methods=['GET'])
+@jwt_required()
+def private():
+    id = get_jwt_identity()
+    user_session = User.query.get(id)
+
+    return jsonify(user_session.serialize()), 200
 
 
-# this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
-    PORT = int(os.environ.get('PORT', 3001))
-    app.run(host='0.0.0.0', port=PORT, debug=True)
+    app.run()
