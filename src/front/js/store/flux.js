@@ -1,4 +1,5 @@
 import Swal from 'sweetalert2'
+import {toas, toast} from 'react-toastify';
 
 
 const getState = ({ getStore, getActions, setStore }) => {

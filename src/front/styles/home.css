@@ -1,7 +1,24 @@
-/*
-    home.css: This website contains selectors only used in home.css
+.cont-home{
+    background-image: url('https://www.xtrafondos.com/wallpapers/resized/ola-en-el-oceano-arte-digital-10134.jpg?s=large');
+    border-radius: 13rem;
+    font-family: monospace;
+    background-size: cover;
+    padding: 3.5rem;
+    color: white;
+}
 
-    All pages share the styles on index.css but you should create 
-    one more css for each page that will contain the selected used 
-    on that page only (the ones not reused in other pages).
-*/
+.title-jumbotron{
+    font-size: 3.5rem;
+    letter-spacing: 0.8rem;
+    color: rgba(4, 4, 131, 0.488);
+}
+
+.jumbotron-button{
+    background-color: rgba(4, 4, 131, 0.488);
+    margin-top: 0.5rem;
+}
+
+.home-title-three{
+    
+    color: rgba(4, 4, 131, 0.488);
+}

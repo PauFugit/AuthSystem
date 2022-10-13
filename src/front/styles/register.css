@@ -1,0 +1,26 @@
+.cont-register{
+    padding: 5rem;
+    font-family: monospace;
+}
+
+.register-title{
+    letter-spacing: 2rem;
+    padding-bottom: 2rem;
+    color: rgba(4, 4, 131, 0.488);
+    float:inline-start;
+}
+
+.register-section{
+    padding: 3rem;
+}
+
+.register-button{
+    padding: 0.3rem;
+    background-color: rgba(4, 4, 131, 0.488);
+    float:inline-end;
+}
+
+.label-register{
+    color:rgba(4, 4, 131, 0.488);
+}
+

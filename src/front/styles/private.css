@@ -1,0 +1,20 @@
+
+.title-jumbotron-private{
+        font-size: 3.5rem;
+        letter-spacing: 0.8rem;
+        color: rgba(4, 4, 131, 0.488);
+}
+
+.title-private-two{
+    letter-spacing: 0.3rem;
+    padding-top: 0.5rem;
+}
+
+
+.private-button{
+    font-size: 1rem;
+    background-color: rgba(4, 4, 131, 0.488);
+}
+.private-section{
+    padding-top: 4rem;
+}
